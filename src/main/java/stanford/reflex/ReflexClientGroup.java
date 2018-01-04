@@ -19,7 +19,7 @@
  *
  */
 
-package com.ibm.narpc;
+package stanford.reflex;
 
 import java.nio.channels.SocketChannel;
 

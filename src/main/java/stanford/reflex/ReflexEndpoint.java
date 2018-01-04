@@ -19,7 +19,7 @@
  *
  */
 
-package com.ibm.narpc;
+package stanford.reflex;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 
-import com.ibm.narpc.ReflexChannel.MessageType;
+import stanford.reflex.ReflexChannel.MessageType;
 
 public class ReflexEndpoint extends ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();

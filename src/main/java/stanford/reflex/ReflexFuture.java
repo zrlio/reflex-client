@@ -19,7 +19,7 @@
  *
  */
 
-package com.ibm.narpc;
+package stanford.reflex;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;

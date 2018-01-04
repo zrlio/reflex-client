@@ -1,4 +1,4 @@
-package com.ibm.narpc;
+package stanford.reflex;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -15,10 +15,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.ibm.narpc.ReflexChannel.MessageType;
-import com.ibm.narpc.ReflexFuture;
-import com.ibm.narpc.ReflexClientGroup;
-import com.ibm.narpc.ReflexEndpoint;
+import stanford.reflex.ReflexChannel;
+import stanford.reflex.ReflexClientGroup;
+import stanford.reflex.ReflexEndpoint;
+import stanford.reflex.ReflexFuture;
+import stanford.reflex.ReflexChannel.MessageType;
 
 public class SimpleReflexClient implements Runnable {
 	private int id;

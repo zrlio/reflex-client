@@ -19,7 +19,7 @@
  *
  */
 
-package com.ibm.narpc;
+package stanford.reflex;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
