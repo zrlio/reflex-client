@@ -29,7 +29,7 @@ public class ReflexClientGroup {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	
 	public static int DEFAULT_QUEUE_DEPTH = 16;
-	public static int DEFAULT_BLOCK_SIZE = 512*1024;
+	public static int DEFAULT_BLOCK_SIZE = 512;
 	
 	private int queueDepth;
 	private int blockSize;

@@ -24,6 +24,7 @@ package com.ibm.narpc;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,9 +32,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+
 import com.ibm.narpc.ReflexChannel.MessageType;
 
 public class ReflexEndpoint extends ReflexChannel {
+	private static final Logger LOG = ReflexUtils.getLogger();
+	
 	private ReflexClientGroup group;
 	private ConcurrentHashMap<Long, ReflexFuture> pendingRPCs;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
@@ -52,6 +57,7 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
 		for (int i = 0; i < group.getQueueDepth(); i++){
 			ByteBuffer buffer = ByteBuffer.allocate(ReflexChannel.HEADERSIZE);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			bufferQueue.put(buffer);
 		}	
 		this.sequencer = new AtomicLong(1);
@@ -82,6 +88,7 @@ public class ReflexEndpoint extends ReflexChannel {
 	}
 
 	public void connect(InetSocketAddress address) throws IOException {
+		LOG.info("connection to " + address.toString());
 		this.channel.connect(address);
 		this.channel.socket().setTcpNoDelay(group.isNodelay());
 		this.channel.configureBlocking(false);		
@@ -115,5 +122,9 @@ public class ReflexEndpoint extends ReflexChannel {
 	
 	private void putBuffer(ByteBuffer buffer){
 		bufferQueue.add(buffer);
+	}
+
+	public ReflexClientGroup getGroup() {
+		return group;
 	}
 }

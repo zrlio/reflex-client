@@ -2,6 +2,7 @@ package com.ibm.narpc;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -35,7 +36,8 @@ public class SimpleReflexClient implements Runnable {
 		this.loopCount = loopCount;
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(batchCount);
 		for (int i = 0; i < batchCount; i++){
-			ByteBuffer buffer = ByteBuffer.allocate(512*1024 + ReflexChannel.HEADERSIZE);
+			ByteBuffer buffer = ByteBuffer.allocate(endpoint.getGroup().getBlockSize() + ReflexChannel.HEADERSIZE);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			bufferQueue.put(buffer);
 		}		
 	}
@@ -67,17 +69,23 @@ public class SimpleReflexClient implements Runnable {
 		int loop = queueDepth;
 		int batchCount = queueDepth;
 		int threadCount = 1;
+		String ipAddress = "localhost";
+		int port = 1234;
 		
 		if (args != null) {
 			Option queueOption = Option.builder("q").desc("queue length").hasArg().build();
 			Option loopOption = Option.builder("k").desc("loop").hasArg().build();
 			Option threadOption = Option.builder("n").desc("number of threads").hasArg().build();
 			Option batchOption = Option.builder("b").desc("batch of RPCs").hasArg().build();
+			Option addressOption = Option.builder("a").desc("address of reflex server").hasArg().build();
+			Option portOption = Option.builder("p").desc("port of reflex server").hasArg().build();
 			Options options = new Options();
 			options.addOption(queueOption);
 			options.addOption(loopOption);
 			options.addOption(threadOption);
 			options.addOption(batchOption);
+			options.addOption(addressOption);
+			options.addOption(portOption);
 			CommandLineParser parser = new DefaultParser();
 
 			try {
@@ -93,7 +101,14 @@ public class SimpleReflexClient implements Runnable {
 				}	
 				if (line.hasOption(batchOption.getOpt())) {
 					batchCount = Integer.parseInt(line.getOptionValue(batchOption.getOpt()));
-				}					
+				}	
+				
+				if (line.hasOption(addressOption.getOpt())) {
+					ipAddress = line.getOptionValue(addressOption.getOpt());
+				}
+				if (line.hasOption(portOption.getOpt())) {
+					port = Integer.parseInt(line.getOptionValue(portOption.getOpt()));
+				}				
 			} catch (ParseException e) {
 				HelpFormatter formatter = new HelpFormatter();
 				formatter.printHelp("TCP RPC", options);
@@ -103,7 +118,7 @@ public class SimpleReflexClient implements Runnable {
 		
 		ReflexClientGroup clientGroup = new ReflexClientGroup(queueDepth, ReflexClientGroup.DEFAULT_BLOCK_SIZE, true);
 		ReflexEndpoint endpoint = clientGroup.createEndpoint();
-		InetSocketAddress address = new InetSocketAddress("localhost", 1234);
+		InetSocketAddress address = new InetSocketAddress(ipAddress, port);
 		endpoint.connect(address);	
 		Thread[] threads = new Thread[threadCount];
 		for (int i = 0; i < threadCount; i++){

@@ -29,7 +29,7 @@ public class ReflexUtils {
 	
 	public static synchronized Logger getLogger(){
 		if (LOG == null){
-			LOG = LoggerFactory.getLogger("com.ibm.narpc");
+			LOG = LoggerFactory.getLogger("com.mast.reflex");
 		}
 		return LOG;
 	}

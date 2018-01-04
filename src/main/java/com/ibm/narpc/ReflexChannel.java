@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 public abstract class ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	static final int HEADERSIZE = Short.BYTES + Short.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES;
-	enum MessageType { PUT, GET, PUT_ACK, GET_RESP }
+	enum MessageType { GET, PUT }
 	
 	private int blockSize;
 	
@@ -78,12 +78,12 @@ public abstract class ReflexChannel {
 			
 		}
 		buffer.flip();
-//		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
+		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
 		return ticket;
 	}
 	
 	public void transmitMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
-//		LOG.info("transmitting message with ticket " + buffer.getLong(4) + ", threadid " + Thread.currentThread().getName());
+		LOG.info("transmitting message with magic2 " + buffer.getShort(0) + ", type " + buffer.getShort(2) + ", ticket " + buffer.getLong(4) + ", threadid " + Thread.currentThread().getName());
 		while(buffer.hasRemaining()){
 			channel.write(buffer);
 		}		
