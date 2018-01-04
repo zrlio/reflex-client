@@ -23,17 +23,42 @@ package com.ibm.narpc;
 
 import java.nio.channels.SocketChannel;
 
-public class ReflexClientGroup<R extends ReflexMessage, T extends ReflexMessage> extends ReflexGroup {
+import org.slf4j.Logger;
+
+public class ReflexClientGroup {
+	private static final Logger LOG = ReflexUtils.getLogger();
 	
-	public ReflexClientGroup() {
-		super();
+	public static int DEFAULT_QUEUE_DEPTH = 16;
+	public static int DEFAULT_MESSAGE_SIZE = 512;
+	
+	private int queueDepth;
+	private int messageSize;
+	private boolean nodelay;	
+	
+	public ReflexClientGroup(){
+		this(DEFAULT_QUEUE_DEPTH, DEFAULT_MESSAGE_SIZE, false);
 	}	
 	
-	public ReflexClientGroup(int queueDepth, int messageSize, boolean nodelay) {
-		super(queueDepth, messageSize, nodelay);
+	public ReflexClientGroup(int queueDepth, int messageSize, boolean nodelay){
+		this.queueDepth = queueDepth;
+		this.messageSize = messageSize;
+		this.nodelay = nodelay;
+		LOG.info("new NaRPC group, queueDepth " + this.queueDepth + ", messageSize " + messageSize);
 	}
 
-	public ReflexEndpoint<R,T> createEndpoint() throws Exception{
-		return new ReflexEndpoint<R,T>(this, SocketChannel.open());
+	public int getQueueDepth() {
+		return queueDepth;
+	}
+
+	public int getMessageSize() {
+		return messageSize;
+	}
+
+	public boolean isNodelay() {
+		return nodelay;
+	}
+	
+	public ReflexEndpoint createEndpoint() throws Exception{
+		return new ReflexEndpoint(this, SocketChannel.open());
 	}
 }

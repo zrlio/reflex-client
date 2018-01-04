@@ -1,8 +1,10 @@
 package com.ibm.narpc;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -11,18 +13,19 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import com.ibm.narpc.ReflexChannel.MessageType;
 import com.ibm.narpc.ReflexFuture;
 import com.ibm.narpc.ReflexClientGroup;
 import com.ibm.narpc.ReflexEndpoint;
 
 public class SimpleReflexClient implements Runnable {
 	private int id;
-	private ReflexEndpoint<SimpleReflexRequest, SimpleReflexResponse> endpoint;
+	private ReflexEndpoint endpoint;
 	private int queueDepth;
 	private int batchCount;
 	private int loopCount;
 	
-	public SimpleReflexClient(int id, ReflexEndpoint<SimpleReflexRequest, SimpleReflexResponse> endpoint, int queueDepth, int batchCount, int loopCount){
+	public SimpleReflexClient(int id, ReflexEndpoint endpoint, int queueDepth, int batchCount, int loopCount){
 		this.id = id;
 		this.endpoint = endpoint;
 		this.queueDepth = queueDepth;
@@ -33,16 +36,14 @@ public class SimpleReflexClient implements Runnable {
 	public void run() {
 		try {
 			System.out.println("SimpleRPCClient, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount);
-			ArrayList<ReflexFuture<SimpleReflexRequest, SimpleReflexResponse>> futureList = new ArrayList<ReflexFuture<SimpleReflexRequest, SimpleReflexResponse>>(batchCount);
+			ArrayList<ReflexFuture> futureList = new ArrayList<ReflexFuture>(batchCount);
 			for(int i = 0; i < loopCount; i++){
 				futureList.clear();
 				for (int j = 0; j < batchCount; j++){
-					SimpleReflexRequest request = new SimpleReflexRequest(i*batchCount + j);
-					SimpleReflexResponse response = new SimpleReflexResponse();
-					ReflexFuture<SimpleReflexRequest, SimpleReflexResponse> future = endpoint.issueRequest(request, response);
+					ReflexFuture future = endpoint.issueRequest(MessageType.GET, 0, 1, ByteBuffer.allocate(512*1024));
 					futureList.add(j, future);
 				}
-				for (ReflexFuture<SimpleReflexRequest, SimpleReflexResponse> future: futureList){
+				for (ReflexFuture future: futureList){
 					future.get();
 //					System.out.println("id " + id + " got response, value " + future.get().getResult() + ", ticket " + future.getTicket());
 				}
@@ -53,7 +54,7 @@ public class SimpleReflexClient implements Runnable {
 	}
 	
 	public static void main(String[] args) throws Exception{
-		int queueDepth = ReflexGroup.DEFAULT_QUEUE_DEPTH;
+		int queueDepth = ReflexClientGroup.DEFAULT_QUEUE_DEPTH;
 		int loop = queueDepth;
 		int batchCount = queueDepth;
 		int threadCount = 1;
@@ -91,8 +92,8 @@ public class SimpleReflexClient implements Runnable {
 			}
 		}	
 		
-		ReflexClientGroup<SimpleReflexRequest, SimpleReflexResponse> clientGroup = new ReflexClientGroup<SimpleReflexRequest, SimpleReflexResponse>(queueDepth, ReflexGroup.DEFAULT_MESSAGE_SIZE, true);
-		ReflexEndpoint<SimpleReflexRequest, SimpleReflexResponse> endpoint = clientGroup.createEndpoint();
+		ReflexClientGroup clientGroup = new ReflexClientGroup(queueDepth, ReflexClientGroup.DEFAULT_MESSAGE_SIZE, true);
+		ReflexEndpoint endpoint = clientGroup.createEndpoint();
 		InetSocketAddress address = new InetSocketAddress("localhost", 1234);
 		endpoint.connect(address);	
 		Thread[] threads = new Thread[threadCount];

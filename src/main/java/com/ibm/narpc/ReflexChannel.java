@@ -36,21 +36,18 @@ import org.slf4j.Logger;
 
 public abstract class ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();
-	static final int HEADERSIZE = Integer.BYTES + Long.BYTES;
+	static final int HEADERSIZE = Short.BYTES + Short.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES;
+	enum MessageType { PUT, GET, PUT_ACK, GET_RESP } 
 	
-	public void makeMessage(long ticket, ReflexMessage message, ByteBuffer buffer) throws IOException {
-		buffer.clear().position(HEADERSIZE);
-		int size = message.write(buffer);
-		buffer.flip();
-		if ((size + HEADERSIZE) != buffer.remaining()) {
-			throw new IOException("Error in serialization");
-		}
-
+	public void makeRequest(MessageType type, long ticket, long lba, int count, ByteBuffer buffer) throws IOException {
 		buffer.clear();
-		buffer.putInt(size);
+		buffer.putShort((short) HEADERSIZE);
+		buffer.putShort((short) type.ordinal());
 		buffer.putLong(ticket);
-		buffer.clear().limit(HEADERSIZE + size);
-	}
+		buffer.putLong(lba);
+		buffer.putInt(count);
+		buffer.clear().limit(HEADERSIZE);
+	}	
 	
 	public long fetchBuffer(SocketChannel channel, ByteBuffer buffer) throws IOException{
 		buffer.clear().limit(HEADERSIZE);

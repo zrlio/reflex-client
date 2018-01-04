@@ -31,19 +31,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ReflexEndpoint<R extends ReflexMessage, T extends ReflexMessage> extends ReflexChannel {
-	private ReflexGroup group;
-	private ConcurrentHashMap<Long, ReflexFuture<R,T>> pendingRPCs;
+import com.ibm.narpc.ReflexChannel.MessageType;
+
+public class ReflexEndpoint extends ReflexChannel {
+	private ReflexClientGroup group;
+	private ConcurrentHashMap<Long, ReflexFuture> pendingRPCs;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
 	private AtomicLong sequencer;
 	private SocketChannel channel;
 	private ReentrantLock readLock;
 	private ReentrantLock writeLock;
 
-	public ReflexEndpoint(ReflexGroup group, SocketChannel channel) throws Exception {
+	public ReflexEndpoint(ReflexClientGroup group, SocketChannel channel) throws Exception {
 		this.group = group;
 		this.channel = channel;
-		this.pendingRPCs = new ConcurrentHashMap<Long, ReflexFuture<R,T>>();
+		this.pendingRPCs = new ConcurrentHashMap<Long, ReflexFuture>();
 		this.readLock = new ReentrantLock();
 		this.writeLock = new ReentrantLock();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
@@ -54,31 +56,28 @@ public class ReflexEndpoint<R extends ReflexMessage, T extends ReflexMessage> ex
 		this.sequencer = new AtomicLong(1);
 	}
 
-	public ReflexFuture<R,T> issueRequest(R request, T response) throws IOException {
-		ByteBuffer buffer = getBuffer();
+	public ReflexFuture issueRequest(MessageType type, long lba, int count, ByteBuffer responseBuffer) throws IOException {
+		ByteBuffer requestBuffer = getBuffer();
 		long ticket = sequencer.getAndIncrement();
-		makeMessage(ticket, request, buffer);
-		ReflexFuture<R,T> future = new ReflexFuture<R,T>(this, request, response, ticket);
+		makeRequest(type, ticket, lba, count, requestBuffer);
+		ReflexFuture future = new ReflexFuture(this, responseBuffer, ticket);
 		pendingRPCs.put(ticket, future);
-		while(!tryTransmitting(buffer)){
+		while(!tryTransmitting(requestBuffer)){
 		}
-		putBuffer(buffer);
+		putBuffer(requestBuffer);
 		return future;
 	}
 	
-	public void pollResponse(AtomicBoolean done) throws IOException {
-		ByteBuffer buffer = getBuffer();
+	public void pollResponse(ByteBuffer responseBuffer, AtomicBoolean done) throws IOException {
 		boolean locked = readLock.tryLock();
 		if (locked) {
 			if (!done.get()){
-				long ticket = fetchBuffer(channel, buffer);
-				ReflexFuture<R,T> future = pendingRPCs.remove(ticket);
-				future.getResponse().update(buffer);
+				long ticket = fetchBuffer(channel, responseBuffer);
+				ReflexFuture future = pendingRPCs.remove(ticket);
 				future.signal();
 			} 
 			readLock.unlock();
 		} 
-		putBuffer(buffer);
 	}
 
 	public void connect(InetSocketAddress address) throws IOException {

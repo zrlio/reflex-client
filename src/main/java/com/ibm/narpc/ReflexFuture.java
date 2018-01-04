@@ -21,23 +21,22 @@
 
 package com.ibm.narpc;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ReflexFuture<R extends ReflexMessage,T extends ReflexMessage> implements Future<T> {
-	private ReflexEndpoint<R,T> endpoint;
-	private R request;
-	private T response;
+public class ReflexFuture implements Future<ByteBuffer> {
+	private ReflexEndpoint endpoint;
+	private ByteBuffer buffer;
 	private long ticket;
 	private AtomicBoolean done;
 	
-	public ReflexFuture(ReflexEndpoint<R,T> endpoint, R request, T response, long ticket) {
+	public ReflexFuture(ReflexEndpoint endpoint, ByteBuffer buffer, long ticket) {
 		this.endpoint = endpoint;
-		this.request = request;
-		this.response = response;
+		this.buffer = buffer;
 		this.ticket = ticket;
 		this.done = new AtomicBoolean(false);
 	}
@@ -56,7 +55,7 @@ public class ReflexFuture<R extends ReflexMessage,T extends ReflexMessage> imple
 	public boolean isDone() {
 		try {
 			if (!done.get()){
-				endpoint.pollResponse(done);
+				endpoint.pollResponse(buffer, done);
 			}
 		} catch(Exception e){
 		}
@@ -64,36 +63,32 @@ public class ReflexFuture<R extends ReflexMessage,T extends ReflexMessage> imple
 	}
 
 	@Override
-	public T get() throws InterruptedException, ExecutionException {
+	public ByteBuffer get() throws InterruptedException, ExecutionException {
 		try {
 			while (!done.get()){
-				endpoint.pollResponse(done);
+				endpoint.pollResponse(buffer, done);
 			}
 		} catch(Exception e){
 			throw new ExecutionException(e);
 		}
-		return response;
+		return buffer;
 	}
 
 	@Override
-	public T get(long timeout, TimeUnit unit) throws InterruptedException,
+	public ByteBuffer get(long timeout, TimeUnit unit) throws InterruptedException,
 			ExecutionException, TimeoutException {
 		try {
 			while (!done.get()){
-				endpoint.pollResponse(done);
+				endpoint.pollResponse(buffer, done);
 			}
 		} catch(Exception e){
 			throw new ExecutionException(e);
 		}
-		return response;
+		return buffer;
 	}
 
-	public R getRequest() {
-		return request;
-	}
-
-	public T getResponse() {
-		return response;
+	public ByteBuffer getResponse() {
+		return buffer;
 	}
 
 	public long getTicket() {
