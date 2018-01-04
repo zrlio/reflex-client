@@ -35,14 +35,14 @@ public class SimpleReflexClient implements Runnable {
 		this.loopCount = loopCount;
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(batchCount);
 		for (int i = 0; i < batchCount; i++){
-			ByteBuffer buffer = ByteBuffer.allocate(512*1024);
+			ByteBuffer buffer = ByteBuffer.allocate(512*1024 + ReflexChannel.HEADERSIZE);
 			bufferQueue.put(buffer);
 		}		
 	}
 
 	public void run() {
 		try {
-			System.out.println("SimpleRPCClient, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount);
+			System.out.println("SimpleReflexClient, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount);
 			ArrayList<ReflexFuture> futureList = new ArrayList<ReflexFuture>(batchCount);
 			for(int i = 0; i < loopCount; i++){
 				futureList.clear();
@@ -54,7 +54,7 @@ public class SimpleReflexClient implements Runnable {
 				for (ReflexFuture future: futureList){
 					future.get();
 					bufferQueue.put(future.getResponse());
-//					System.out.println("id " + id + " got response, value " + future.get().getResult() + ", ticket " + future.getTicket());
+					System.out.println("id " + id + " got response, ticket " + future.getTicket());
 				}
 			}
 		} catch(Exception e){
@@ -101,7 +101,7 @@ public class SimpleReflexClient implements Runnable {
 			}
 		}	
 		
-		ReflexClientGroup clientGroup = new ReflexClientGroup(queueDepth, ReflexClientGroup.DEFAULT_MESSAGE_SIZE, true);
+		ReflexClientGroup clientGroup = new ReflexClientGroup(queueDepth, ReflexClientGroup.DEFAULT_BLOCK_SIZE, true);
 		ReflexEndpoint endpoint = clientGroup.createEndpoint();
 		InetSocketAddress address = new InetSocketAddress("localhost", 1234);
 		endpoint.connect(address);	

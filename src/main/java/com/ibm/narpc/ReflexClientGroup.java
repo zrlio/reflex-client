@@ -29,29 +29,29 @@ public class ReflexClientGroup {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	
 	public static int DEFAULT_QUEUE_DEPTH = 16;
-	public static int DEFAULT_MESSAGE_SIZE = 512;
+	public static int DEFAULT_BLOCK_SIZE = 512*1024;
 	
 	private int queueDepth;
-	private int messageSize;
+	private int blockSize;
 	private boolean nodelay;	
 	
 	public ReflexClientGroup(){
-		this(DEFAULT_QUEUE_DEPTH, DEFAULT_MESSAGE_SIZE, false);
+		this(DEFAULT_QUEUE_DEPTH, DEFAULT_BLOCK_SIZE, false);
 	}	
 	
-	public ReflexClientGroup(int queueDepth, int messageSize, boolean nodelay){
+	public ReflexClientGroup(int queueDepth, int blockSize, boolean nodelay){
 		this.queueDepth = queueDepth;
-		this.messageSize = messageSize;
+		this.blockSize = blockSize;
 		this.nodelay = nodelay;
-		LOG.info("new NaRPC group, queueDepth " + this.queueDepth + ", messageSize " + messageSize);
+		LOG.info("new NaRPC group, queueDepth " + this.queueDepth + ", blockSize " + blockSize);
 	}
 
 	public int getQueueDepth() {
 		return queueDepth;
 	}
 
-	public int getMessageSize() {
-		return messageSize;
+	public int getBlockSize() {
+		return blockSize;
 	}
 
 	public boolean isNodelay() {

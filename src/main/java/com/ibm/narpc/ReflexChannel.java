@@ -37,7 +37,13 @@ import org.slf4j.Logger;
 public abstract class ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	static final int HEADERSIZE = Short.BYTES + Short.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES;
-	enum MessageType { PUT, GET, PUT_ACK, GET_RESP } 
+	enum MessageType { PUT, GET, PUT_ACK, GET_RESP }
+	
+	private int blockSize;
+	
+	public ReflexChannel(int blockSize){
+		this.blockSize = blockSize;
+	}
 	
 	public void makeRequest(MessageType type, long ticket, long lba, int count, ByteBuffer buffer) throws IOException {
 		buffer.clear();
@@ -57,9 +63,14 @@ public abstract class ReflexChannel {
 			}
 		}
 		buffer.flip();
-		int size = buffer.getInt();
+		
+		short magic = buffer.getShort();
+		short type = buffer.getShort();
 		long ticket = buffer.getLong();
-		buffer.clear().limit(size);
+		long lba = buffer.getLong();
+		int count = buffer.getInt();
+		
+		buffer.clear().limit();
 		while (buffer.hasRemaining()) {
 			if (channel.read(buffer) < 0) {
 				throw new IOException("error when reading header from socket");

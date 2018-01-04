@@ -43,6 +43,7 @@ public class ReflexEndpoint extends ReflexChannel {
 	private ReentrantLock writeLock;
 
 	public ReflexEndpoint(ReflexClientGroup group, SocketChannel channel) throws Exception {
+		super(group.getBlockSize());
 		this.group = group;
 		this.channel = channel;
 		this.pendingRPCs = new ConcurrentHashMap<Long, ReflexFuture>();
@@ -50,7 +51,7 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.writeLock = new ReentrantLock();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
 		for (int i = 0; i < group.getQueueDepth(); i++){
-			ByteBuffer buffer = ByteBuffer.allocate(group.getMessageSize());
+			ByteBuffer buffer = ByteBuffer.allocate(ReflexChannel.HEADERSIZE);
 			bufferQueue.put(buffer);
 		}	
 		this.sequencer = new AtomicLong(1);
