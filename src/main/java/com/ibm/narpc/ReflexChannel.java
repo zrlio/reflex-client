@@ -70,7 +70,7 @@ public abstract class ReflexChannel {
 		long lba = buffer.getLong();
 		int count = buffer.getInt();
 		
-		buffer.clear().limit();
+		buffer.clear().limit(count*blockSize);
 		while (buffer.hasRemaining()) {
 			if (channel.read(buffer) < 0) {
 				throw new IOException("error when reading header from socket");
