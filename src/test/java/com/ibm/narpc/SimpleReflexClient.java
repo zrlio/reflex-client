@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -24,13 +25,19 @@ public class SimpleReflexClient implements Runnable {
 	private int queueDepth;
 	private int batchCount;
 	private int loopCount;
+	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
 	
-	public SimpleReflexClient(int id, ReflexEndpoint endpoint, int queueDepth, int batchCount, int loopCount){
+	public SimpleReflexClient(int id, ReflexEndpoint endpoint, int queueDepth, int batchCount, int loopCount) throws InterruptedException{
 		this.id = id;
 		this.endpoint = endpoint;
 		this.queueDepth = queueDepth;
 		this.batchCount = batchCount;
 		this.loopCount = loopCount;
+		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(batchCount);
+		for (int i = 0; i < batchCount; i++){
+			ByteBuffer buffer = ByteBuffer.allocate(512*1024);
+			bufferQueue.put(buffer);
+		}		
 	}
 
 	public void run() {
@@ -40,11 +47,13 @@ public class SimpleReflexClient implements Runnable {
 			for(int i = 0; i < loopCount; i++){
 				futureList.clear();
 				for (int j = 0; j < batchCount; j++){
-					ReflexFuture future = endpoint.issueRequest(MessageType.GET, 0, 1, ByteBuffer.allocate(512*1024));
+					ByteBuffer responseBuffer = bufferQueue.take();
+					ReflexFuture future = endpoint.issueRequest(MessageType.GET, 0, 1, responseBuffer);
 					futureList.add(j, future);
 				}
 				for (ReflexFuture future: futureList){
 					future.get();
+					bufferQueue.put(future.getResponse());
 //					System.out.println("id " + id + " got response, value " + future.get().getResult() + ", ticket " + future.getTicket());
 				}
 			}
