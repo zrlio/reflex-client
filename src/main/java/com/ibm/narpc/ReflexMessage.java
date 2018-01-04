@@ -21,7 +21,10 @@
 
 package com.ibm.narpc;
 
-public interface NaRPCService<R extends NaRPCMessage, T extends NaRPCMessage> {
-	R createRequest();
-	T processRequest(R request);
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+public interface ReflexMessage {
+	public int write(ByteBuffer buffer) throws IOException;
+	public void update(ByteBuffer buffer) throws IOException;
 }

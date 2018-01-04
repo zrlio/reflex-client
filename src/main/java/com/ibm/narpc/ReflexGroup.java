@@ -2,8 +2,8 @@ package com.ibm.narpc;
 
 import org.slf4j.Logger;
 
-public class NaRPCGroup {
-	private static final Logger LOG = NaRPCUtils.getLogger();
+public class ReflexGroup {
+	private static final Logger LOG = ReflexUtils.getLogger();
 	
 	public static int DEFAULT_QUEUE_DEPTH = 16;
 	public static int DEFAULT_MESSAGE_SIZE = 512;
@@ -12,14 +12,14 @@ public class NaRPCGroup {
 	private int messageSize;
 	private boolean nodelay;
 	
-	public NaRPCGroup(){
+	public ReflexGroup(){
 		this(DEFAULT_QUEUE_DEPTH, DEFAULT_MESSAGE_SIZE, false);
 //		this.queueDepth = DEFAULT_QUEUE_DEPTH;
 //		this.messageSize = DEFAULT_MESSAGE_SIZE;
 //		this.nodelay = false;
 	}	
 	
-	public NaRPCGroup(int queueDepth, int messageSize, boolean nodelay){
+	public ReflexGroup(int queueDepth, int messageSize, boolean nodelay){
 		this.queueDepth = queueDepth;
 		this.messageSize = messageSize;
 		this.nodelay = nodelay;

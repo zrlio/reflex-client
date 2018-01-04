@@ -26,12 +26,19 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 
+//typedef struct __attribute__ ((__packed__)) {
+//	  uint16_t magic;
+//	  uint16_t opcode;
+//	  void *req_handle;
+//	  unsigned long lba;
+//	  unsigned int lba_count;
+//	} binary_header_blk_t;
 
-public abstract class NaRPCChannel {
-	private static final Logger LOG = NaRPCUtils.getLogger();
+public abstract class ReflexChannel {
+	private static final Logger LOG = ReflexUtils.getLogger();
 	static final int HEADERSIZE = Integer.BYTES + Long.BYTES;
 	
-	public void makeMessage(long ticket, NaRPCMessage message, ByteBuffer buffer) throws IOException {
+	public void makeMessage(long ticket, ReflexMessage message, ByteBuffer buffer) throws IOException {
 		buffer.clear().position(HEADERSIZE);
 		int size = message.write(buffer);
 		buffer.flip();

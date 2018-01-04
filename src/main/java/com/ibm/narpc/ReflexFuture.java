@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class NaRPCFuture<R extends NaRPCMessage,T extends NaRPCMessage> implements Future<T> {
-	private NaRPCEndpoint<R,T> endpoint;
+public class ReflexFuture<R extends ReflexMessage,T extends ReflexMessage> implements Future<T> {
+	private ReflexEndpoint<R,T> endpoint;
 	private R request;
 	private T response;
 	private long ticket;
 	private AtomicBoolean done;
 	
-	public NaRPCFuture(NaRPCEndpoint<R,T> endpoint, R request, T response, long ticket) {
+	public ReflexFuture(ReflexEndpoint<R,T> endpoint, R request, T response, long ticket) {
 		this.endpoint = endpoint;
 		this.request = request;
 		this.response = response;

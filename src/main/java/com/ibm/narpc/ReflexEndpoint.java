@@ -31,19 +31,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> extends NaRPCChannel {
-	private NaRPCGroup group;
-	private ConcurrentHashMap<Long, NaRPCFuture<R,T>> pendingRPCs;
+public class ReflexEndpoint<R extends ReflexMessage, T extends ReflexMessage> extends ReflexChannel {
+	private ReflexGroup group;
+	private ConcurrentHashMap<Long, ReflexFuture<R,T>> pendingRPCs;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
 	private AtomicLong sequencer;
 	private SocketChannel channel;
 	private ReentrantLock readLock;
 	private ReentrantLock writeLock;
 
-	public NaRPCEndpoint(NaRPCGroup group, SocketChannel channel) throws Exception {
+	public ReflexEndpoint(ReflexGroup group, SocketChannel channel) throws Exception {
 		this.group = group;
 		this.channel = channel;
-		this.pendingRPCs = new ConcurrentHashMap<Long, NaRPCFuture<R,T>>();
+		this.pendingRPCs = new ConcurrentHashMap<Long, ReflexFuture<R,T>>();
 		this.readLock = new ReentrantLock();
 		this.writeLock = new ReentrantLock();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
@@ -54,11 +54,11 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> exten
 		this.sequencer = new AtomicLong(1);
 	}
 
-	public NaRPCFuture<R,T> issueRequest(R request, T response) throws IOException {
+	public ReflexFuture<R,T> issueRequest(R request, T response) throws IOException {
 		ByteBuffer buffer = getBuffer();
 		long ticket = sequencer.getAndIncrement();
 		makeMessage(ticket, request, buffer);
-		NaRPCFuture<R,T> future = new NaRPCFuture<R,T>(this, request, response, ticket);
+		ReflexFuture<R,T> future = new ReflexFuture<R,T>(this, request, response, ticket);
 		pendingRPCs.put(ticket, future);
 		while(!tryTransmitting(buffer)){
 		}
@@ -72,7 +72,7 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> exten
 		if (locked) {
 			if (!done.get()){
 				long ticket = fetchBuffer(channel, buffer);
-				NaRPCFuture<R,T> future = pendingRPCs.remove(ticket);
+				ReflexFuture<R,T> future = pendingRPCs.remove(ticket);
 				future.getResponse().update(buffer);
 				future.signal();
 			} 

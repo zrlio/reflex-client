@@ -21,10 +21,16 @@
 
 package com.ibm.narpc;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface NaRPCMessage {
-	public int write(ByteBuffer buffer) throws IOException;
-	public void update(ByteBuffer buffer) throws IOException;
+public class ReflexUtils {
+	private static Logger LOG = ReflexUtils.getLogger();
+	
+	public static synchronized Logger getLogger(){
+		if (LOG == null){
+			LOG = LoggerFactory.getLogger("com.ibm.narpc");
+		}
+		return LOG;
+	}
 }

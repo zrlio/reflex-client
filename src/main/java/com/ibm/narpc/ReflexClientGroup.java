@@ -23,17 +23,17 @@ package com.ibm.narpc;
 
 import java.nio.channels.SocketChannel;
 
-public class NaRPCClientGroup<R extends NaRPCMessage, T extends NaRPCMessage> extends NaRPCGroup {
+public class ReflexClientGroup<R extends ReflexMessage, T extends ReflexMessage> extends ReflexGroup {
 	
-	public NaRPCClientGroup() {
+	public ReflexClientGroup() {
 		super();
 	}	
 	
-	public NaRPCClientGroup(int queueDepth, int messageSize, boolean nodelay) {
+	public ReflexClientGroup(int queueDepth, int messageSize, boolean nodelay) {
 		super(queueDepth, messageSize, nodelay);
 	}
 
-	public NaRPCEndpoint<R,T> createEndpoint() throws Exception{
-		return new NaRPCEndpoint<R,T>(this, SocketChannel.open());
+	public ReflexEndpoint<R,T> createEndpoint() throws Exception{
+		return new ReflexEndpoint<R,T>(this, SocketChannel.open());
 	}
 }

@@ -3,14 +3,14 @@ package com.ibm.narpc;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class SimpleRpcRequest implements NaRPCMessage {
+public class SimpleReflexRequest implements ReflexMessage {
 	private int command;
 	
-	public SimpleRpcRequest(){
+	public SimpleReflexRequest(){
 		this.command = -1;
 	}	
 	
-	public SimpleRpcRequest(int command){
+	public SimpleReflexRequest(int command){
 		this.command = command;
 	}
 
