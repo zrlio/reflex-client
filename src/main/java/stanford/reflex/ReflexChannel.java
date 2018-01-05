@@ -1,5 +1,5 @@
 /*
- * NaRPC: An NIO-based RPC library
+ * ReflexClient: An NIO-based Reflex client library
  *
  * Author: Patrick Stuedi <stu@zurich.ibm.com>
  *
@@ -78,12 +78,12 @@ public abstract class ReflexChannel {
 			
 		}
 		buffer.flip();
-		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
+//		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
 		return ticket;
 	}
 	
 	public void transmitMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
-		LOG.info("transmitting message with magic2 " + buffer.getShort(0) + ", type " + buffer.getShort(2) + ", ticket " + buffer.getLong(4) + ", threadid " + Thread.currentThread().getName());
+//		LOG.info("transmitting message with magic2 " + buffer.getShort(0) + ", type " + buffer.getShort(2) + ", ticket " + buffer.getLong(4) + ", threadid " + Thread.currentThread().getName());
 		while(buffer.hasRemaining()){
 			channel.write(buffer);
 		}		

@@ -1,5 +1,5 @@
 /*
- * NaRPC: An NIO-based RPC library
+ * ReflexClient: An NIO-based Reflex client library
  *
  * Author: Patrick Stuedi <stu@zurich.ibm.com>
  *
@@ -63,6 +63,13 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.sequencer = new AtomicLong(1);
 	}
 
+	public void connect(InetSocketAddress address) throws IOException {
+		LOG.info("connection to " + address.toString());
+		this.channel.connect(address);
+		this.channel.socket().setTcpNoDelay(group.isNodelay());
+		this.channel.configureBlocking(false);		
+	}
+
 	public ReflexFuture issueRequest(MessageType type, long lba, int count, ByteBuffer responseBuffer) throws IOException {
 		ByteBuffer requestBuffer = getBuffer();
 		long ticket = sequencer.getAndIncrement();
@@ -75,7 +82,19 @@ public class ReflexEndpoint extends ReflexChannel {
 		return future;
 	}
 	
-	public void pollResponse(ByteBuffer responseBuffer, AtomicBoolean done) throws IOException {
+	public void close() throws IOException{
+		this.channel.close();
+	}
+
+	public String address() throws IOException {
+		return channel.getRemoteAddress().toString();
+	}
+
+	public ReflexClientGroup getGroup() {
+		return group;
+	}
+
+	void pollResponse(ByteBuffer responseBuffer, AtomicBoolean done) throws IOException {
 		boolean locked = readLock.tryLock();
 		if (locked) {
 			if (!done.get()){
@@ -87,21 +106,6 @@ public class ReflexEndpoint extends ReflexChannel {
 		} 
 	}
 
-	public void connect(InetSocketAddress address) throws IOException {
-		LOG.info("connection to " + address.toString());
-		this.channel.connect(address);
-		this.channel.socket().setTcpNoDelay(group.isNodelay());
-		this.channel.configureBlocking(false);		
-	}	
-	
-	public void close() throws IOException{
-		this.channel.close();
-	}
-	
-	public String address() throws IOException {
-		return channel.getRemoteAddress().toString();
-	}
-	
 	private boolean tryTransmitting(ByteBuffer buffer) throws IOException{
 		boolean locked = writeLock.tryLock();
 		if (locked) {
@@ -122,9 +126,5 @@ public class ReflexEndpoint extends ReflexChannel {
 	
 	private void putBuffer(ByteBuffer buffer){
 		bufferQueue.add(buffer);
-	}
-
-	public ReflexClientGroup getGroup() {
-		return group;
 	}
 }

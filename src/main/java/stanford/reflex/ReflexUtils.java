@@ -1,5 +1,5 @@
 /*
- * NaRPC: An NIO-based RPC library
+ * ReflexClient: An NIO-based Reflex client library
  *
  * Author: Patrick Stuedi <stu@zurich.ibm.com>
  *
