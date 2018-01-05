@@ -56,7 +56,7 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.pendingRPCs = new ConcurrentHashMap<Long, ReflexFuture>();
 		this.readLock = new ReentrantLock();
 		this.writeLock = new ReentrantLock();
-		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
+		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth()+1);
 		for (int i = 0; i < group.getQueueDepth()+1; i++){
 			ByteBuffer buffer = ByteBuffer.allocate(ReflexChannel.HEADERSIZE);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
