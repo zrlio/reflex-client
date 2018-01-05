@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 public abstract class ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	static final int HEADERSIZE = Short.BYTES + Short.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES;
-	enum MessageType { GET, PUT }
+	public enum MessageType { GET, PUT }
 	
 	private int blockSize;
 	
