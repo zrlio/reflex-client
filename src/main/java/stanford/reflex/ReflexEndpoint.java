@@ -31,13 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.slf4j.Logger;
 
-import stanford.reflex.ReflexChannel.MessageType;
 
 public class ReflexEndpoint extends ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();
+	private static final short CMD_GET = 0;
+	private static final short CMD_PUT = 1;
 	
 	private ReflexClientGroup group;
 	private ConcurrentHashMap<Long, ReflexFuture> pendingRPCs;
@@ -58,7 +58,7 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.writeLock = new ReentrantLock();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth()+1);
 		for (int i = 0; i < group.getQueueDepth()+1; i++){
-			ByteBuffer buffer = ByteBuffer.allocate(ReflexChannel.HEADERSIZE);
+			ByteBuffer buffer = ByteBuffer.allocate(ReflexHeader.HEADERSIZE);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			bufferQueue.put(buffer);
 		}	
@@ -74,16 +74,29 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.channel.configureBlocking(false);		
 	}
 
-	public ReflexFuture issueRequest(MessageType type, long lba, int count, ByteBuffer buffer) throws IOException {
+	public ReflexFuture put(long lba, ByteBuffer buffer) throws IOException {
+		return issueOperation(CMD_PUT, lba, buffer);
+	}
+	
+	public ReflexFuture get(long lba, ByteBuffer buffer) throws IOException {
+		return issueOperation(CMD_GET, lba, buffer);
+	}
+	
+	private ReflexFuture issueOperation(short type, long lba, ByteBuffer buffer) throws IOException {
+		if (buffer.remaining() % group.getBlockSize() != 0){
+			throw new IOException("Only full block reads supported");
+		}
+		int count = buffer.remaining() / group.getBlockSize();
 		ByteBuffer requestBuffer = getBuffer();
 		long ticket = sequencer.getAndIncrement();
 		makeRequest(type, ticket, lba, count, requestBuffer);
 		ReflexFuture future = new ReflexFuture(this, ticket, buffer);
 		pendingRPCs.put(ticket, future);
-		while(!tryTransmitting(requestBuffer)){
+		ByteBuffer payload = type == CMD_PUT ? buffer : null;
+		while(!tryTransmitting(requestBuffer, payload)){
 		}
 		putBuffer(requestBuffer);
-		return future;
+		return future;		
 	}
 	
 	public void close() throws IOException{
@@ -104,22 +117,28 @@ public class ReflexEndpoint extends ReflexChannel {
 			if (!done.get()){
 				fetchHeader(channel, responseBuffer, header);
 				ReflexFuture future = pendingRPCs.remove(header.getTicket());
-				fetchBuffer(channel, header, future.getBuffer());
+				if (header.getType() == CMD_GET){
+					fetchBuffer(channel, header, future.getBuffer());
+					
+				}
 				future.signal();
 			} 
 			readLock.unlock();
 		} 
 	}
 
-	private boolean tryTransmitting(ByteBuffer buffer) throws IOException{
+	private boolean tryTransmitting(ByteBuffer header, ByteBuffer buffer) throws IOException{
 		boolean locked = writeLock.tryLock();
 		if (locked) {
-			transmitMessage(channel, buffer);
+			transmitMessage(channel, header);
+			if (buffer != null){
+				transmitMessage(channel, buffer);
+			}
 			writeLock.unlock();
 			return true;
 		} 		
 		return false;
-	}
+	}	
 	
 	private ByteBuffer getBuffer(){
 		ByteBuffer buffer = bufferQueue.poll();

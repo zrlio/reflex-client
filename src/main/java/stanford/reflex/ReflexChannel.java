@@ -26,18 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 
-//typedef struct __attribute__ ((__packed__)) {
-//	  uint16_t magic;
-//	  uint16_t opcode;
-//	  void *req_handle;
-//	  unsigned long lba;
-//	  unsigned int lba_count;
-//	} binary_header_blk_t;
-
 public abstract class ReflexChannel {
 	private static final Logger LOG = ReflexUtils.getLogger();
-	static final int HEADERSIZE = Short.BYTES + Short.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES;
-	public enum MessageType { GET, PUT }
 	
 	private int blockSize;
 	
@@ -45,18 +35,18 @@ public abstract class ReflexChannel {
 		this.blockSize = blockSize;
 	}
 	
-	public void makeRequest(MessageType type, long ticket, long lba, int count, ByteBuffer buffer) throws IOException {
+	public void makeRequest(short type, long ticket, long lba, int count, ByteBuffer buffer) throws IOException {
 		buffer.clear();
-		buffer.putShort((short) HEADERSIZE);
-		buffer.putShort((short) type.ordinal());
+		buffer.putShort((short) ReflexHeader.HEADERSIZE);
+		buffer.putShort(type);
 		buffer.putLong(ticket);
 		buffer.putLong(lba);
 		buffer.putInt(count);
-		buffer.clear().limit(HEADERSIZE);
+		buffer.clear().limit(ReflexHeader.HEADERSIZE);
 	}
 	
 	public void fetchHeader(SocketChannel channel, ByteBuffer buffer, ReflexHeader header) throws IOException{
-		buffer.clear().limit(HEADERSIZE);
+		buffer.clear().limit(ReflexHeader.HEADERSIZE);
 		while (buffer.hasRemaining()) {
 			if (channel.read(buffer) < 0){
 				throw new IOException("channel is closed (!)");
@@ -76,33 +66,6 @@ public abstract class ReflexChannel {
 		}
 		buffer.flip();
 	}	
-	
-//	public long fetchBuffer(SocketChannel channel, ByteBuffer header, ByteBuffer buffer) throws IOException{
-//		header.clear().limit(HEADERSIZE);
-//		while (header.hasRemaining()) {
-//			if (channel.read(header) < 0){
-//				return -1;
-//			}
-//		}
-//		header.flip();
-//		
-//		short magic = header.getShort();
-//		short type = header.getShort();
-//		long ticket = header.getLong();
-//		long lba = header.getLong();
-//		int count = header.getInt();
-//		
-//		buffer.clear().limit(count*blockSize);
-//		while (buffer.hasRemaining()) {
-//			if (channel.read(buffer) < 0) {
-//				throw new IOException("error when reading header from socket");
-//			}
-//			
-//		}
-//		buffer.flip();
-////		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
-//		return ticket;
-//	}
 	
 	public void transmitMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
 //		LOG.info("transmitting message with magic2 " + buffer.getShort(0) + ", type " + buffer.getShort(2) + ", ticket " + buffer.getLong(4) + ", threadid " + Thread.currentThread().getName());

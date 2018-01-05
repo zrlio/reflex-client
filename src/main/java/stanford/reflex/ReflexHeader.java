@@ -11,6 +11,8 @@ import java.nio.ByteBuffer;
 //} binary_header_blk_t;
 
 public class ReflexHeader {
+	public static final int HEADERSIZE = Short.BYTES + Short.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES;
+	
 	private short magic;
 	private short type;
 	private long ticket;

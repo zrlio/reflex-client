@@ -43,7 +43,7 @@ public class ReflexClientGroup {
 		this.queueDepth = queueDepth;
 		this.blockSize = blockSize;
 		this.nodelay = nodelay;
-		LOG.info("new NaRPC group, queueDepth " + this.queueDepth + ", blockSize " + blockSize);
+		LOG.info("new ReflexClientGroup group, queueDepth " + this.queueDepth + ", blockSize " + blockSize + ", nodelay " + nodelay);
 	}
 
 	public int getQueueDepth() {

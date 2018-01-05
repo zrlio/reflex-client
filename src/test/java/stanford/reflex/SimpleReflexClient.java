@@ -24,10 +24,8 @@ package stanford.reflex;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -35,21 +33,21 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
-import stanford.reflex.ReflexChannel;
+import org.slf4j.Logger;
 import stanford.reflex.ReflexClientGroup;
 import stanford.reflex.ReflexEndpoint;
 import stanford.reflex.ReflexFuture;
-import stanford.reflex.ReflexChannel.MessageType;
 
 public class SimpleReflexClient implements Runnable {
+	private static final Logger LOG = ReflexUtils.getLogger();
+	
 	private int id;
 	private ReflexEndpoint endpoint;
 	private int queueDepth;
 	private int batchCount;
 	private int loopCount;
 	private int size;
-	private int blockCount;
+	private int count;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
 	
 	public SimpleReflexClient(int id, ReflexEndpoint endpoint, int queueDepth, int batchCount, int loopCount, int size) throws InterruptedException{
@@ -59,10 +57,10 @@ public class SimpleReflexClient implements Runnable {
 		this.batchCount = batchCount;
 		this.loopCount = loopCount;
 		this.size = size;
-		this.blockCount = size/endpoint.getGroup().getBlockSize();
+		this.count = size/endpoint.getGroup().getBlockSize();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(batchCount);
 		for (int i = 0; i < batchCount; i++){
-			ByteBuffer buffer = ByteBuffer.allocate(size + ReflexChannel.HEADERSIZE);
+			ByteBuffer buffer = ByteBuffer.allocate(size);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			bufferQueue.put(buffer);
 		}		
@@ -70,26 +68,28 @@ public class SimpleReflexClient implements Runnable {
 
 	public void run() {
 		try {
-			System.out.println("SimpleReflexClient 1.3, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount + ", size " + size + ", blockCount " + blockCount);
+			LOG.info("SimpleReflexClient 1.4, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount + ", size " + size + ", count " + count);
 			ArrayBlockingQueue<ReflexFuture> futureList = new ArrayBlockingQueue<ReflexFuture>(batchCount);
 			long start = System.currentTimeMillis();
 			double ops = 0.0;
-			int index = 0;
+			int lba = 0;
 			for (int i = 0; i < batchCount; i++){
 				ByteBuffer responseBuffer = bufferQueue.take();
 				responseBuffer.clear();
-				ReflexFuture future = endpoint.issueRequest(MessageType.GET, index, blockCount, responseBuffer);
+				ReflexFuture future = endpoint.get(lba, responseBuffer);
 				futureList.add(future);
 				ops += 1.0;
+				lba += count;
 			}
 			for(int i = 0; i < loopCount - batchCount; i++){
 				ReflexFuture future = futureList.poll();
 				future.get();
 				ByteBuffer responseBuffer = future.getBuffer();
 				responseBuffer.clear();
-				future = endpoint.issueRequest(MessageType.GET, 0, blockCount, responseBuffer);
+				future = endpoint.get(lba, responseBuffer);
 				futureList.add(future);
 				ops += 1.0;
+				lba += count;
 			}			
 			while(!futureList.isEmpty()){
 				ReflexFuture future = futureList.poll();
@@ -107,11 +107,11 @@ public class SimpleReflexClient implements Runnable {
 				throughput = sumbits / executionTime / 1000.0 / 1000.0;
 				latency = 1000000.0 * executionTime / ops;
 			}
-			System.out.println("execution time " + executionTime);
-			System.out.println("ops " + ops);
-			System.out.println("sumbytes " + sumbytes);
-			System.out.println("throughput " + throughput);
-			System.out.println("latency " + latency);			
+			LOG.info("execution time " + executionTime);
+			LOG.info("ops " + ops);
+			LOG.info("sumbytes " + sumbytes);
+			LOG.info("throughput " + throughput);
+			LOG.info("latency " + latency);			
 		} catch(Exception e){
 			e.printStackTrace();
 		}
@@ -125,6 +125,7 @@ public class SimpleReflexClient implements Runnable {
 		String ipAddress = "localhost";
 		int port = 1234;
 		int size = ReflexClientGroup.DEFAULT_BLOCK_SIZE;
+		boolean noDelay = false;
 		
 		if (args != null) {
 			Option queueOption = Option.builder("q").desc("queue length").hasArg().build();
@@ -134,6 +135,7 @@ public class SimpleReflexClient implements Runnable {
 			Option addressOption = Option.builder("a").desc("address of reflex server").hasArg().build();
 			Option portOption = Option.builder("p").desc("port of reflex server").hasArg().build();
 			Option sizeOption = Option.builder("s").desc("size").hasArg().build();
+			Option noDelayOption = Option.builder("d").desc("nodelay").hasArg().build();
 			Options options = new Options();
 			options.addOption(queueOption);
 			options.addOption(loopOption);
@@ -142,6 +144,7 @@ public class SimpleReflexClient implements Runnable {
 			options.addOption(addressOption);
 			options.addOption(portOption);
 			options.addOption(sizeOption);
+			options.addOption(noDelayOption);
 			CommandLineParser parser = new DefaultParser();
 
 			try {
@@ -167,6 +170,9 @@ public class SimpleReflexClient implements Runnable {
 				}		
 				if (line.hasOption(sizeOption.getOpt())) {
 					size = Integer.parseInt(line.getOptionValue(sizeOption.getOpt()));
+				}		
+				if (line.hasOption(noDelayOption.getOpt())) {
+					noDelay = Boolean.parseBoolean(line.getOptionValue(noDelayOption.getOpt()));
 				}				
 			} catch (ParseException e) {
 				HelpFormatter formatter = new HelpFormatter();
@@ -175,7 +181,7 @@ public class SimpleReflexClient implements Runnable {
 			}
 		}	
 		
-		ReflexClientGroup clientGroup = new ReflexClientGroup(queueDepth, ReflexClientGroup.DEFAULT_BLOCK_SIZE, true);
+		ReflexClientGroup clientGroup = new ReflexClientGroup(queueDepth, ReflexClientGroup.DEFAULT_BLOCK_SIZE, noDelay);
 		ReflexEndpoint endpoint = clientGroup.createEndpoint();
 		InetSocketAddress address = new InetSocketAddress(ipAddress, port);
 		endpoint.connect(address);	
