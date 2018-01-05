@@ -42,6 +42,8 @@ public class ReflexEndpoint extends ReflexChannel {
 	private ReflexClientGroup group;
 	private ConcurrentHashMap<Long, ReflexFuture> pendingRPCs;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
+	private ByteBuffer responseBuffer;
+	private ReflexHeader header;
 	private AtomicLong sequencer;
 	private SocketChannel channel;
 	private ReentrantLock readLock;
@@ -55,11 +57,13 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.readLock = new ReentrantLock();
 		this.writeLock = new ReentrantLock();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
-		for (int i = 0; i < group.getQueueDepth(); i++){
+		for (int i = 0; i < group.getQueueDepth()+1; i++){
 			ByteBuffer buffer = ByteBuffer.allocate(ReflexChannel.HEADERSIZE);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			bufferQueue.put(buffer);
 		}	
+		this.responseBuffer = bufferQueue.poll();
+		this.header = new ReflexHeader();
 		this.sequencer = new AtomicLong(1);
 	}
 
@@ -70,11 +74,11 @@ public class ReflexEndpoint extends ReflexChannel {
 		this.channel.configureBlocking(false);		
 	}
 
-	public ReflexFuture issueRequest(MessageType type, long lba, int count, ByteBuffer responseBuffer) throws IOException {
+	public ReflexFuture issueRequest(MessageType type, long lba, int count, ByteBuffer buffer) throws IOException {
 		ByteBuffer requestBuffer = getBuffer();
 		long ticket = sequencer.getAndIncrement();
 		makeRequest(type, ticket, lba, count, requestBuffer);
-		ReflexFuture future = new ReflexFuture(this, responseBuffer, ticket);
+		ReflexFuture future = new ReflexFuture(this, ticket, buffer);
 		pendingRPCs.put(ticket, future);
 		while(!tryTransmitting(requestBuffer)){
 		}
@@ -94,12 +98,13 @@ public class ReflexEndpoint extends ReflexChannel {
 		return group;
 	}
 
-	void pollResponse(ByteBuffer responseBuffer, AtomicBoolean done) throws IOException {
+	void pollResponse(AtomicBoolean done) throws IOException {
 		boolean locked = readLock.tryLock();
 		if (locked) {
 			if (!done.get()){
-				long ticket = fetchBuffer(channel, responseBuffer);
-				ReflexFuture future = pendingRPCs.remove(ticket);
+				fetchHeader(channel, responseBuffer, header);
+				ReflexFuture future = pendingRPCs.remove(header.getTicket());
+				fetchBuffer(channel, header, future.getBuffer());
 				future.signal();
 			} 
 			readLock.unlock();

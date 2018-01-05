@@ -70,7 +70,7 @@ public class SimpleReflexClient implements Runnable {
 
 	public void run() {
 		try {
-			System.out.println("SimpleReflexClient 1.2, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount + ", size " + size + ", blockCount " + blockCount);
+			System.out.println("SimpleReflexClient 1.3, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount + ", size " + size + ", blockCount " + blockCount);
 			ArrayBlockingQueue<ReflexFuture> futureList = new ArrayBlockingQueue<ReflexFuture>(batchCount);
 			long start = System.currentTimeMillis();
 			double ops = 0.0;
@@ -85,48 +85,20 @@ public class SimpleReflexClient implements Runnable {
 			for(int i = 0; i < loopCount - batchCount; i++){
 				ReflexFuture future = futureList.poll();
 				future.get();
-				ByteBuffer responseBuffer = future.getResponse();
+				ByteBuffer responseBuffer = future.getBuffer();
 				responseBuffer.clear();
 				future = endpoint.issueRequest(MessageType.GET, 0, blockCount, responseBuffer);
 				futureList.add(future);
 				ops += 1.0;
 			}			
-//			for(int i = 0; i < loopCount - batchCount; i++){
-//				while(true){
-//					ReflexFuture future = futureList.poll();
-//					if (future.isDone()){
-//						ByteBuffer responseBuffer = future.getResponse();
-//						responseBuffer.clear();
-//						future = endpoint.issueRequest(MessageType.GET, 0, blockCount, responseBuffer);
-//						futureList.add(future);
-//						ops += 1.0;
-//						break;
-//					} else {
-//						futureList.add(future);
-//					}
-//				}
-//			}
 			while(!futureList.isEmpty()){
 				ReflexFuture future = futureList.poll();
 				if (!future.isDone()){
 					futureList.add(future);
 				}
 			}			
-//			for(int i = 0; i < loopCount; i++){
-//				futureList.clear();
-//				for (int j = 0; j < batchCount; j++){
-//					ByteBuffer responseBuffer = bufferQueue.take();
-//					ReflexFuture future = endpoint.issueRequest(MessageType.GET, 0, blockCount, responseBuffer);
-//					futureList.add(j, future);
-//				}
-//				for (ReflexFuture future: futureList){
-//					future.get();
-//					bufferQueue.put(future.getResponse());
-//				}
-//			}
 			long end = System.currentTimeMillis();
 			double executionTime = ((double) (end - start)) / 1000.0;
-//			double ops = loopCount*batchCount;
 			double sumbytes = ops*size;
 			double throughput = 0.0;
 			double latency = 0.0;

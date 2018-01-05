@@ -34,7 +34,7 @@ public class ReflexFuture implements Future<ByteBuffer> {
 	private long ticket;
 	private AtomicBoolean done;
 	
-	public ReflexFuture(ReflexEndpoint endpoint, ByteBuffer buffer, long ticket) {
+	public ReflexFuture(ReflexEndpoint endpoint, long ticket, ByteBuffer buffer) {
 		this.endpoint = endpoint;
 		this.buffer = buffer;
 		this.ticket = ticket;
@@ -55,7 +55,7 @@ public class ReflexFuture implements Future<ByteBuffer> {
 	public boolean isDone() {
 		try {
 			if (!done.get()){
-				endpoint.pollResponse(buffer, done);
+				endpoint.pollResponse(done);
 			}
 		} catch(Exception e){
 		}
@@ -66,7 +66,7 @@ public class ReflexFuture implements Future<ByteBuffer> {
 	public ByteBuffer get() throws InterruptedException, ExecutionException {
 		try {
 			while (!done.get()){
-				endpoint.pollResponse(buffer, done);
+				endpoint.pollResponse(done);
 			}
 		} catch(Exception e){
 			throw new ExecutionException(e);
@@ -79,15 +79,15 @@ public class ReflexFuture implements Future<ByteBuffer> {
 			ExecutionException, TimeoutException {
 		try {
 			while (!done.get()){
-				endpoint.pollResponse(buffer, done);
+				endpoint.pollResponse(done);
 			}
 		} catch(Exception e){
 			throw new ExecutionException(e);
 		}
 		return buffer;
 	}
-
-	public ByteBuffer getResponse() {
+	
+	public ByteBuffer getBuffer() {
 		return buffer;
 	}
 

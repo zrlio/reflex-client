@@ -53,24 +53,21 @@ public abstract class ReflexChannel {
 		buffer.putLong(lba);
 		buffer.putInt(count);
 		buffer.clear().limit(HEADERSIZE);
-	}	
+	}
 	
-	public long fetchBuffer(SocketChannel channel, ByteBuffer buffer) throws IOException{
+	public void fetchHeader(SocketChannel channel, ByteBuffer buffer, ReflexHeader header) throws IOException{
 		buffer.clear().limit(HEADERSIZE);
 		while (buffer.hasRemaining()) {
 			if (channel.read(buffer) < 0){
-				return -1;
+				throw new IOException("channel is closed (!)");
 			}
 		}
 		buffer.flip();
-		
-		short magic = buffer.getShort();
-		short type = buffer.getShort();
-		long ticket = buffer.getLong();
-		long lba = buffer.getLong();
-		int count = buffer.getInt();
-		
-		buffer.clear().limit(count*blockSize);
+		header.update(buffer);
+	}	
+	
+	public void fetchBuffer(SocketChannel channel, ReflexHeader header, ByteBuffer buffer) throws IOException{
+		buffer.clear().limit(header.getCount()*blockSize);
 		while (buffer.hasRemaining()) {
 			if (channel.read(buffer) < 0) {
 				throw new IOException("error when reading header from socket");
@@ -78,9 +75,34 @@ public abstract class ReflexChannel {
 			
 		}
 		buffer.flip();
-//		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
-		return ticket;
-	}
+	}	
+	
+//	public long fetchBuffer(SocketChannel channel, ByteBuffer header, ByteBuffer buffer) throws IOException{
+//		header.clear().limit(HEADERSIZE);
+//		while (header.hasRemaining()) {
+//			if (channel.read(header) < 0){
+//				return -1;
+//			}
+//		}
+//		header.flip();
+//		
+//		short magic = header.getShort();
+//		short type = header.getShort();
+//		long ticket = header.getLong();
+//		long lba = header.getLong();
+//		int count = header.getInt();
+//		
+//		buffer.clear().limit(count*blockSize);
+//		while (buffer.hasRemaining()) {
+//			if (channel.read(buffer) < 0) {
+//				throw new IOException("error when reading header from socket");
+//			}
+//			
+//		}
+//		buffer.flip();
+////		LOG.info("fetching message with ticket " + ticket + ", threadid " + Thread.currentThread().getName());
+//		return ticket;
+//	}
 	
 	public void transmitMessage(SocketChannel channel, ByteBuffer buffer) throws IOException {
 //		LOG.info("transmitting message with magic2 " + buffer.getShort(0) + ", type " + buffer.getShort(2) + ", ticket " + buffer.getLong(4) + ", threadid " + Thread.currentThread().getName());
