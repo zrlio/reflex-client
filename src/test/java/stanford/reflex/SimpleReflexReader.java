@@ -38,7 +38,7 @@ import stanford.reflex.ReflexClientGroup;
 import stanford.reflex.ReflexEndpoint;
 import stanford.reflex.ReflexFuture;
 
-public class SimpleReflexClient implements Runnable {
+public class SimpleReflexReader implements Runnable {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	
 	private int id;
@@ -50,7 +50,7 @@ public class SimpleReflexClient implements Runnable {
 	private int count;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
 	
-	public SimpleReflexClient(int id, ReflexEndpoint endpoint, int queueDepth, int batchCount, int loopCount, int size) throws InterruptedException{
+	public SimpleReflexReader(int id, ReflexEndpoint endpoint, int queueDepth, int batchCount, int loopCount, int size) throws InterruptedException{
 		this.id = id;
 		this.endpoint = endpoint;
 		this.queueDepth = queueDepth;
@@ -68,7 +68,7 @@ public class SimpleReflexClient implements Runnable {
 
 	public void run() {
 		try {
-			LOG.info("SimpleReflexClient 1.4, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount + ", size " + size + ", count " + count);
+			LOG.info("SimpleReflexReader 1.4, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount + ", size " + size + ", count " + count);
 			ArrayBlockingQueue<ReflexFuture> futureList = new ArrayBlockingQueue<ReflexFuture>(batchCount);
 			long start = System.currentTimeMillis();
 			double ops = 0.0;
@@ -187,7 +187,7 @@ public class SimpleReflexClient implements Runnable {
 		endpoint.connect(address);	
 		Thread[] threads = new Thread[threadCount];
 		for (int i = 0; i < threadCount; i++){
-			SimpleReflexClient client = new SimpleReflexClient(i, endpoint, queueDepth, batchCount, loop, size);
+			SimpleReflexReader client = new SimpleReflexReader(i, endpoint, queueDepth, batchCount, loop, size);
 			threads[i] = new Thread(client);
 			threads[i].start();
 		}
