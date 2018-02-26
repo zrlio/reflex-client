@@ -19,7 +19,7 @@
  *
  */
 
-package stanford.reflex;
+package com.ibm.reflex.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

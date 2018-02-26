@@ -15,6 +15,11 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 
+import com.ibm.reflex.client.ReflexClientGroup;
+import com.ibm.reflex.client.ReflexEndpoint;
+import com.ibm.reflex.client.ReflexFuture;
+import com.ibm.reflex.client.ReflexUtils;
+
 public class SimpleReflexWriter implements Runnable {
 	private static final Logger LOG = ReflexUtils.getLogger();
 	

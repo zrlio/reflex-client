@@ -1,4 +1,4 @@
-package stanford.reflex;
+package com.ibm.reflex.client;
 
 import java.nio.ByteBuffer;
 
