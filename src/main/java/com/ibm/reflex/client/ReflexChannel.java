@@ -57,7 +57,8 @@ public abstract class ReflexChannel {
 	}	
 	
 	public void fetchBuffer(SocketChannel channel, ReflexHeader header, ByteBuffer buffer) throws IOException{
-		buffer.clear().limit(header.getCount()*blockSize);
+		// do not modify the buffer here, as this buffer has the right
+		// position and limit set.
 		while (buffer.hasRemaining()) {
 			if (channel.read(buffer) < 0) {
 				throw new IOException("error when reading header from socket");
